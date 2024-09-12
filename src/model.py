@@ -16,31 +16,6 @@ class GCN(torch.nn.Module):
         self.conv2 = GCNConv(hidden_dim, hidden_dim)
         self.conv3 = GCNConv(hidden_dim, output_dim)
 
-    def forward(self, data):
-        x, edge_index = data.x, data.edge_index
-    # def forward(self, x, edge_index):
-
-        x = self.conv1(x, edge_index)
-        x = F.relu(x)
-        x = F.dropout(x, training=self.training)
-        x = self.conv2(x, edge_index)
-        x = F.relu(x)
-        x = F.dropout(x, training=self.training)
-        x = self.conv3(x, edge_index)
-
-        # x = F.relu(self.conv1(x, edge_index))
-        # x = F.relu(self.conv2(x, edge_index))
-        # x = self.conv3(x, edge_index)
-
-        return F.log_softmax(x, dim=1)
-
-class GCN_v2(torch.nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim):
-        super(GCN_v2, self).__init__()
-        self.conv1 = GCNConv(input_dim, hidden_dim)
-        self.conv2 = GCNConv(hidden_dim, hidden_dim)
-        self.conv3 = GCNConv(hidden_dim, output_dim)
-
     def forward(self, x, edge_index):
 
         x = self.conv1(x, edge_index)
@@ -153,7 +128,7 @@ def main(config_file, output_dir):
     model.train()
     for epoch in range(200):
         optimizer.zero_grad()
-        out = model(data)
+        out = model(data.x, data.edge_index)
         if model_name=='gin':
             loss = F.cross_entropy(out[data.train_mask], data.y[data.train_mask])
         else:

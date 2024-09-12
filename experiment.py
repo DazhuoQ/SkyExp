@@ -1,10 +1,9 @@
 import sys
-from tqdm.std import tqdm
-import numpy as np
 import torch
 import torch.nn.functional as F
+from torch_geometric.utils import is_undirected
+
 from src.utils import *
-import pandas as pd
 from src.model import get_model
 from src.mo_alg import mo_alg
 
@@ -17,11 +16,11 @@ def main(config_file, output_dir):
     random_seed = config['random_seed']
     L = config['L']
     exp_name = config['exp_name']
-    vt_size = config['vt_size']
     
     
     # Get input graph
     data = dataset_func(config, random_seed)
+    print(f'is_undirected: {is_undirected(data.edge_index)}')
 
     # Get the VT
     VT = torch.where(data.test_mask)[0]
@@ -32,10 +31,6 @@ def main(config_file, output_dir):
     model.load_state_dict(torch.load('models/{}_{}_model.pth'.format(data_name, model_name), weights_only=True))
     model.eval()
     model.to(device)
-
-    # log
-    out = model(data)
-    probs = F.softmax(out, dim=1)
 
 
     # experiments

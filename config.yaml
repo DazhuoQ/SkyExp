@@ -1,11 +1,10 @@
 exp_name: why # why
 random_seed: 42
-vt_size: 100
 L: 1
 
 data_name: "Cora"
 data_size: 2708
-num_test: 1000
+num_test: 5
 input_dim: 1433
 output_dim: 7
 
