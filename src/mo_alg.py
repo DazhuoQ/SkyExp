@@ -11,6 +11,7 @@ import torch
 from torch_geometric.utils import k_hop_subgraph, subgraph
 from torch_geometric.data import Data
 from itertools import combinations
+import torch.nn.functional as F
 
 from src.plot import plot_hop_nodes
 
@@ -75,6 +76,8 @@ def edge_delete_states(data, model, subset_nodes, subset_edges, b):
     for comb in combinations_of_k_edges:
         remaining_edges = remove_edges(subset_edges, comb)
         combined_edges = torch.cat([remaining_edges, edges_outside_subset], dim=1)
+        # out = model(x, combined_edges)
+        # predictions = F.softmax(out, dim=1)
         predictions = model(x, combined_edges)
         subset_predictions = predictions[subset_nodes]
         all_predictions.append(subset_predictions)
