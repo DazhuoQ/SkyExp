@@ -3,7 +3,8 @@ import os
 import numpy as np
 import yaml
 import torch
-from torch_geometric.datasets import Planetoid
+from torch_geometric.datasets import Planetoid, FacebookPagePage, AmazonProducts
+from ogb.nodeproppred import PygNodePropPredDataset
 
 
 def set_seed(seed):
@@ -33,7 +34,113 @@ def dataset_func(config, random_seed):
     random_seed = config['random_seed']
     os.makedirs(data_dir, exist_ok=True)
     set_seed(random_seed)
+
+    if data_name == "FacebookPage":
+        dataset = FacebookPagePage(root="./datasets/facebookpp")
+        data = dataset[0]
+        num_nodes = data.x.size(0)
+
+        # Create new masks
+        train_mask = torch.zeros(num_nodes, dtype=torch.bool)
+        val_mask = torch.zeros(num_nodes, dtype=torch.bool)
+        test_mask = torch.zeros(num_nodes, dtype=torch.bool)
+
+        # Example: 60% train, 20% val, 20% test
+        num_train = int(0.6 * num_nodes)
+        num_val = num_nodes - num_train - num_test
+
+        # Set the masks
+        train_mask[:num_train] = 1
+        val_mask[num_train:num_train + num_val] = 1
+        test_mask[num_train + num_val:] = 1
+
+        # Assign the new masks to the data object
+        data.train_mask = train_mask
+        data.val_mask = val_mask
+        data.test_mask = test_mask
+
+        print(data)
+        return data
+
+
+    if data_name == "AmazonProducts":
+        dataset = AmazonProducts(root="./datasets/amazon")
+        data = dataset[0]
+        num_nodes = data.x.size(0)
+
+        # Create new masks
+        train_mask = torch.zeros(num_nodes, dtype=torch.bool)
+        val_mask = torch.zeros(num_nodes, dtype=torch.bool)
+        test_mask = torch.zeros(num_nodes, dtype=torch.bool)
+
+        # Example: 60% train, 20% val, 20% test
+        num_train = int(0.6 * num_nodes)
+        num_val = num_nodes - num_train - num_test
+
+        # Set the masks
+        train_mask[:num_train] = 1
+        val_mask[num_train:num_train + num_val] = 1
+        test_mask[num_train + num_val:] = 1
+
+        # Assign the new masks to the data object
+        data.train_mask = train_mask
+        data.val_mask = val_mask
+        data.test_mask = test_mask
+
+        print(data)
+        return data
+    
+
+    if data_name == "arxiv":
+        dataset = PygNodePropPredDataset(name='ogbn-arxiv')
+        data = dataset[0]
+        num_nodes = data.x.size(0)
+        # print(f'data.y[:,0]:{data.y[:,0]}')
+        # print(f'torch.max(data.y[:,0]):{torch.max(data.y[:,0])}')
+        # print(f'torch.min(data.y[:,0]):{torch.min(data.y[:,0])}')
+        data.y = data.y[:,0]
+
+        # Create new masks
+        train_mask = torch.zeros(num_nodes, dtype=torch.bool)
+        val_mask = torch.zeros(num_nodes, dtype=torch.bool)
+        test_mask = torch.zeros(num_nodes, dtype=torch.bool)
+
+        # Example: 60% train, 20% val, 20% test
+        num_train = int(0.6 * num_nodes)
+        num_val = num_nodes - num_train - num_test
+
+        # Set the masks
+        train_mask[:num_train] = 1
+        val_mask[num_train:num_train + num_val] = 1
+        test_mask[num_train + num_val:] = 1
+
+        # Assign the new masks to the data object
+        data.train_mask = train_mask
+        data.val_mask = val_mask
+        data.test_mask = test_mask
+
+        print(data)
+        return data
+
+
     num_train_per_class = (data_size - num_test)//num_class
     data = Planetoid(root=data_dir, name=data_name, split='random', num_train_per_class=num_train_per_class, num_val=0, num_test=num_test)[0]
     return data
+
+
+def get_save_path(dataset, apx_name):
+    # Get the directory of the current script
+    current_directory = os.path.dirname(os.path.abspath(__file__))
+
+    # Define base directory for results relative to the script's directory
+    base_results_directory = os.path.join(current_directory, "results")
+    os.makedirs(base_results_directory, exist_ok=True)
+
+    dataset_path = os.path.join(base_results_directory, dataset)
+    os.makedirs(dataset_path, exist_ok=True)
+
+    method_path = os.path.join(dataset_path, apx_name)
+    os.makedirs(method_path, exist_ok=True)
+
+    return method_path
 

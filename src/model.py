@@ -3,7 +3,7 @@ import sys
 import numpy as np
 import torch
 import torch.nn.functional as F
-from torch_geometric.nn import GCNConv, GATConv, GINConv
+from torch_geometric.nn import GCNConv, GATConv, GINConv, SAGEConv
 from torch.nn import Sequential as Seq, Linear, ReLU, BatchNorm1d
 import torch.optim as optim
 
@@ -29,6 +29,59 @@ class GCN(torch.nn.Module):
         return F.log_softmax(x, dim=1)
 
 
+class GCN_1(torch.nn.Module):
+    def __init__(self, input_dim, hidden_dim, output_dim):
+        super(GCN_1, self).__init__()
+        self.conv1 = GCNConv(input_dim, output_dim)
+
+    def forward(self, x, edge_index):
+
+        x = self.conv1(x, edge_index)
+
+        return F.log_softmax(x, dim=1)
+
+
+class GCN_2(torch.nn.Module):
+    def __init__(self, input_dim, hidden_dim, output_dim):
+        super(GCN_2, self).__init__()
+        self.conv1 = GCNConv(input_dim, hidden_dim)
+        self.conv2 = GCNConv(hidden_dim, output_dim)
+
+    def forward(self, x, edge_index):
+
+        x = self.conv1(x, edge_index)
+        x = F.relu(x)
+        x = F.dropout(x, training=self.training)
+        x = self.conv2(x, edge_index)
+
+        return F.log_softmax(x, dim=1)
+
+
+class GCN_4(torch.nn.Module):
+    def __init__(self, input_dim, hidden_dim, output_dim):
+        super(GCN_4, self).__init__()
+        self.conv1 = GCNConv(input_dim, hidden_dim)
+        self.conv2 = GCNConv(hidden_dim, hidden_dim)
+        self.conv3 = GCNConv(hidden_dim, hidden_dim)
+        self.conv4 = GCNConv(hidden_dim, output_dim)
+
+    def forward(self, x, edge_index):
+
+        x = self.conv1(x, edge_index)
+        x = F.relu(x)
+        x = F.dropout(x, training=self.training)
+        x = self.conv2(x, edge_index)
+        x = F.relu(x)
+        x = F.dropout(x, training=self.training)
+        x = self.conv3(x, edge_index)
+        x = F.relu(x)
+        x = F.dropout(x, training=self.training)
+        x = self.conv4(x, edge_index)
+
+        return F.log_softmax(x, dim=1)
+
+
+
 class GAT(torch.nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim):
         super(GAT, self).__init__()
@@ -38,14 +91,16 @@ class GAT(torch.nn.Module):
         self.conv2 = GATConv(hidden_dim * heads, hidden_dim, heads=heads, dropout=0.6)
         self.conv3 = GATConv(hidden_dim * heads, output_dim, heads=1, concat=True, dropout=0.6)
 
-    def forward(self, data):
-        x, edge_index = data.x, data.edge_index
+    def forward(self, x, edge_index):
+        
+        x, edge_index = x, edge_index
         x = F.dropout(x, p=0.6, training=self.training)
         x = F.elu(self.conv1(x, edge_index))
         x = F.dropout(x, p=0.6, training=self.training)
         x = F.elu(self.conv2(x, edge_index))
         x = F.dropout(x, p=0.6, training=self.training)
         x = self.conv3(x, edge_index)
+
         return F.log_softmax(x, dim=-1)
 
 
@@ -73,12 +128,55 @@ class GIN(torch.nn.Module):
         
         self.lin = Linear(hidden_dim, output_dim)
 
-    def forward(self, data):
-        x, edge_index = data.x, data.edge_index
+    def forward(self, x, edge_index):
+        x, edge_index = x, edge_index
         x = F.relu(self.conv1(x, edge_index))
         x = F.relu(self.conv2(x, edge_index))
         x = F.relu(self.conv3(x, edge_index))
         return self.lin(x)
+
+
+# class GIN(torch.nn.Module):
+#     def __init__(self, input_dim, hidden_dim, output_dim):
+#         super(GIN, self).__init__()
+
+#         self.conv1 = GINConv(Seq(Linear(input_dim, hidden_dim),
+#                                  ReLU(),
+#                                  Linear(hidden_dim, hidden_dim),
+#                                  ReLU(),
+#                                  BatchNorm1d(hidden_dim)), train_eps=True)
+        
+#         self.lin = Linear(hidden_dim, output_dim)
+
+#     def forward(self, x, edge_index):
+#         x, edge_index = x, edge_index
+#         x = F.relu(self.conv1(x, edge_index))
+#         return self.lin(x)
+
+
+class GraphSAGE(torch.nn.Module):
+    def __init__(self, input_dim, hidden_dim, output_dim):
+        super(GraphSAGE, self).__init__()
+        
+        # Define the layers
+        self.conv1 = SAGEConv(input_dim, hidden_dim)
+        self.conv2 = SAGEConv(hidden_dim, hidden_dim)
+        self.conv3 = SAGEConv(hidden_dim, output_dim)
+
+    def forward(self, x, edge_index):
+        # First layer with ReLU activation
+        x = self.conv1(x, edge_index)
+        x = F.relu(x)
+
+        # Second layer with ReLU activation
+        x = self.conv2(x, edge_index)
+        x = F.relu(x)
+
+        # Third layer (output layer)
+        x = self.conv3(x, edge_index)
+
+        return x
+
 
 
 def get_model(config):
@@ -96,6 +194,18 @@ def get_model(config):
         return model 
     elif model_name == 'gin':
         model = GIN(input_dim=input_dim, hidden_dim=hidden_dim, output_dim=output_dim)
+        return model 
+    elif model_name == 'sage':
+        model = GraphSAGE(input_dim=input_dim, hidden_dim=hidden_dim, output_dim=output_dim)
+        return model 
+    elif model_name == 'gcn1':
+        model = GCN_1(input_dim=input_dim, hidden_dim=hidden_dim, output_dim=output_dim)
+        return model 
+    elif model_name == 'gcn2':
+        model = GCN_2(input_dim=input_dim, hidden_dim=hidden_dim, output_dim=output_dim)
+        return model 
+    elif model_name == 'gcn4':
+        model = GCN_4(input_dim=input_dim, hidden_dim=hidden_dim, output_dim=output_dim)
         return model 
 
 

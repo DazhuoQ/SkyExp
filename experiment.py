@@ -1,48 +1,135 @@
+import os
 import sys
+import time
 import torch
 import torch.nn.functional as F
 from torch_geometric.utils import is_undirected
+from torch_geometric.utils import k_hop_subgraph
 
 from src.utils import *
 from src.model import get_model
-from src.mo_alg import mo_alg
+from src.apxalgop import ApxSXOP
+from src.apxalgi import ApxSXI
+from src.divalg import DivSX
 
 
 def main(config_file, output_dir):
+
     # Load configuration
     config = load_config(config_file)
     data_name = config['data_name']
     model_name = config['model_name']
     random_seed = config['random_seed']
     L = config['L']
+    k = config['k']
+    epsilon = config['epsilon']
     exp_name = config['exp_name']
+    VT = config['VT']
     
-    
+    # Save experiment settings
+    print('Seed: '+str(config['random_seed']))
+    print('Exp: '+str(config['exp_name']))
+    print('Dataset: '+str(config['data_name']))
+    print('k: '+str(config['k']))
+    print('Model: '+str(config['model_name']))
+    print('L: '+str(config['L']))
+
+
     # Get input graph
     data = dataset_func(config, random_seed)
-    print(f'is_undirected: {is_undirected(data.edge_index)}')
+    # print(f'is_undirected: {is_undirected(data.edge_index)}')
 
     # Get the VT
-    VT = torch.where(data.test_mask)[0]
+    # VT = torch.where(data.test_mask)[0]
+    # VT = torch.tensor([1394, 2013])
+    VT = torch.tensor(VT)
+    print(f'VT:{VT}')
 
     # Ready the model
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model = get_model(config)
-    model.load_state_dict(torch.load('models/{}_{}_model.pth'.format(data_name, model_name), weights_only=True))
+    model.load_state_dict(torch.load('models/{}_{}_model.pth'.format(data_name, model_name), weights_only=False, map_location=torch.device('cpu')))
     model.eval()
     model.to(device)
 
-
     # experiments
-    if exp_name == 'why':
-        mo_alg(data, model, VT, L)
+    if exp_name == 'ksx':
+        algorithm = ApxSXOP(G = data, 
+                          model = model, 
+                          VT = VT, 
+                          k = k, 
+                          L = L,
+                          epsilon = epsilon)
+        start_time = time.time()
+        algorithm.generate_k_skylines()
+        end_time = time.time()
 
+        path = get_save_path(data_name, exp_name)
+        filename = f'{str(k)}_{model_name}_{str(L)}.pt'
+        torch.save(algorithm.k_sky_lst, os.path.join(path, filename))
 
-    # Save experiment settings
-    print('Seed: '+str(config['random_seed']))
-    print('Dataset: '+str(config['data_name']))
-    print('Model: '+str(config['model_name']))
-    print('Exp: '+str(config['exp_name']))
+        print("Running Time: {:.2f} seconds".format(end_time - start_time))
+        algorithm.IPF()
+        print('IPF scores: {:.2f}'.format(algorithm.ipf))
+        # algorithm.IGD(algorithm.k_sky_lst)
+        # print('IGD scores: {:.2f}'.format(algorithm.igd))
+        # algorithm.MS(algorithm.k_sky_lst)
+        # print('MS scores: f+={:.2f}, f-={:.2f}, conc={:.2f}'.format(algorithm.ms_lst[0], algorithm.ms_lst[1], algorithm.ms_lst[2]))
+
+        print('ok')
+
+    if exp_name == 'insert':
+        algorithm = ApxSXI(G = data, 
+                          model = model, 
+                          VT = VT, 
+                          k = k, 
+                          L = L,
+                          epsilon = epsilon)
+        start_time = time.time()
+        algorithm.generate_k_skylines()
+        end_time = time.time()
+
+        path = get_save_path(data_name, exp_name)
+        filename = f'{str(k)}_{model_name}_{str(L)}.pt'
+        torch.save(algorithm.k_sky_lst, os.path.join(path, filename))
+        
+        print("Running Time: {:.2f} seconds".format(end_time - start_time))
+        algorithm.IPF()
+        print('IPF scores: {:.2f}'.format(algorithm.ipf))
+        # algorithm.IGD(algorithm.k_sky_lst)
+        # print('IGD scores: {:.2f}'.format(algorithm.igd))
+        # algorithm.MS(algorithm.k_sky_lst)
+        # print('MS scores: f+={:.2f}, f-={:.2f}, conc={:.2f}'.format(algorithm.ms_lst[0], algorithm.ms_lst[1], algorithm.ms_lst[2]))
+
+        print('ok')
+
+    if exp_name == 'div':
+        algorithm = DivSX(G = data, 
+                          model = model, 
+                          VT = VT, 
+                          k = k, 
+                          L = L,
+                          epsilon = epsilon,
+                          beta = config['beta'],
+                          alpha = config['alpha'],
+                          )
+        start_time = time.time()
+        algorithm.generate_k_skylines()
+        end_time = time.time()
+
+        path = get_save_path(data_name, exp_name)
+        filename = f'{str(k)}_{model_name}_{str(L)}.pt'
+        torch.save(algorithm.k_sky_lst, os.path.join(path, filename))
+
+        print("Running Time: {:.2f} seconds".format(end_time - start_time))
+        algorithm.IPF()
+        print('IPF scores: {:.2f}'.format(algorithm.ipf))
+        # algorithm.IGD(algorithm.k_sky_lst)
+        # print('IGD scores: {:.2f}'.format(algorithm.igd))
+        # algorithm.MS(algorithm.k_sky_lst)
+        # print('MS scores: f+={:.2f}, f-={:.2f}, conc={:.2f}'.format(algorithm.ms_lst[0], algorithm.ms_lst[1], algorithm.ms_lst[2]))
+
+        print('ok')
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
