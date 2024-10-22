@@ -1,12 +1,23 @@
 Seed: 42
-Exp: div
-Dataset: arxiv
+Exp: insert
+Dataset: AmazonComputers
 k: 10
 Model: gcn
 L: 3
-Data(num_nodes=169343, edge_index=[2, 1166243], x=[169343, 128], node_year=[169343, 1], y=[169343], train_mask=[169343], val_mask=[169343], test_mask=[169343])
-VT:tensor([0])
-Identification Time: 245.48 seconds
-Running Time: 284.21 seconds
-IPF scores: 0.66
+Data(x=[13752, 767], edge_index=[2, 491722], y=[13752], train_mask=[13752], val_mask=[13752], test_mask=[13752])
+VT:tensor([ 5,  6,  8,  9, 14, 19, 20, 27, 30, 33])
+original_edge_mask:94IdeRunning Time: 1128.82 seconds
+IPF scores: 0.69
+ok
+e: 5.72 seconds
+Identification Time: 6.27 seconds
+Identification Time: 0.85 seconds
+Identification Time: 16.47 seconds
+Identification Time: 5.92 seconds
+Identification Time: 0.01 seconds
+Identification Time: 1.67 seconds
+Identification Time: 11.09 seconds
+Identification Time: 1.15 seconds
+Running Time: 239.17 seconds
+IPF scores: 0.69
 ok

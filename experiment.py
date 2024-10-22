@@ -44,6 +44,8 @@ def main(config_file, output_dir):
     # VT = torch.tensor([1394, 2013])
     VT = torch.tensor(VT)
     print(f'VT:{VT}')
+    _, _, _, original_edge_mask = k_hop_subgraph(VT[0].item(), 2, data.edge_index, relabel_nodes=False)
+    print(f'original_edge_mask:{original_edge_mask.sum().item()}')
 
     # Ready the model
     device = 'cuda' if torch.cuda.is_available() else 'cpu'

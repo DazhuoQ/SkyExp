@@ -20,7 +20,7 @@ class ApxSXI:
         self.model = model  # gnn model
         self.k = k  # size of the skyline set
         self.VT = VT  # test nodes
-        self.L = L  # num of gnn layers
+        self.L = L - 1 # num of gnn layers
         self.epsilon = epsilon
         self.k_sky_lst = []
 
@@ -29,56 +29,6 @@ class ApxSXI:
         self.ms_lst = []
         self.ipf = 0
         self.igd = np.inf
-
-
-    def get_edge_sets_by_hop(self, vt):
-
-        L = self.L
-        edge_index = self.G.edge_index
-
-        node_idx, edge_index_sub, _, original_edge_mask = k_hop_subgraph(vt, L, edge_index, relabel_nodes=False)
-        _, _, _, ori_mask = k_hop_subgraph(vt, L+1, edge_index, relabel_nodes=False)
-        selected_edge_positions = torch.nonzero(original_edge_mask, as_tuple=False).squeeze()
-        subg_size = selected_edge_positions.size(0)
-        
-        hop_distances = {node.item(): float('inf') for node in node_idx}
-        hop_distances[vt] = 0
-        queue = deque([vt])
-        
-        while queue:
-            current_node = queue.popleft()
-            current_hop = hop_distances[current_node]
-            
-            for edge_idx in selected_edge_positions:
-                src, dst = edge_index[:, edge_idx]
-                if src.item() == current_node:
-                    if hop_distances[dst.item()] == float('inf'):
-                        hop_distances[dst.item()] = current_hop + 1
-                        queue.append(dst.item())
-                elif dst.item() == current_node:
-                    if hop_distances[src.item()] == float('inf'):
-                        hop_distances[src.item()] = current_hop + 1
-                        queue.append(src.item())
-        
-        edges_by_hop = defaultdict(list)
-        edge_masks_by_hop = {}
-        for edge_idx in selected_edge_positions:
-            src, dst = edge_index[:, edge_idx]
-            src_hop = hop_distances[src.item()]
-            dst_hop = hop_distances[dst.item()]
-            
-            edge_hop = min(src_hop, dst_hop) + 1
-            edges_by_hop[edge_hop].append(edge_idx.item())
-
-        for hop in range(1, L + 2):
-            mask = original_edge_mask.clone()
-            if hop in edges_by_hop:
-                for future_hop in range(hop + 1, L + 2):
-                    for edge_idx in edges_by_hop[future_hop]:
-                        mask[edge_idx] = False
-            edge_masks_by_hop[hop] = mask
-        
-        return edges_by_hop, edge_masks_by_hop, subg_size, ori_mask
 
 
     def compute_fidelity(self, node_idx, edge_mask, ori_mask):
@@ -158,7 +108,7 @@ class ApxSXI:
             selected_edge_positions = torch.nonzero(original_edge_mask, as_tuple=False).squeeze()
             subg_size = selected_edge_positions.size(0)
 
-            _, _, _, l2_edge_mask = k_hop_subgraph(vt, 2, edge_index, relabel_nodes=False)
+            _, _, _, l2_edge_mask = k_hop_subgraph(vt, 1, edge_index, relabel_nodes=False)
             # fplus_ori, fminus_ori, factual_ori, counterfactual_ori = self.compute_fidelity(vt, l2_edge_mask, ori_mask)
             # print(f'l hop graph: factual_ori: {factual_ori}, counterfactual_ori: {counterfactual_ori}')
 
@@ -167,7 +117,7 @@ class ApxSXI:
             DRG = defaultdict(list)
             k_sky = []
             cur_v = vt
-            epoch = 12
+            epoch = 8
             # if epoch < 10:
             #     epoch = 10
             visited = []
@@ -177,18 +127,23 @@ class ApxSXI:
                 # print(f'epoch:{epoch}')
                 # print(f'cur_v:{cur_v}')
                 edge_size = s_0.sum().item() + 1
-                t_star = (None, [0, 0, 0])
-                if edge_size == 0:
-                    fplus_0 = 0
-                    fminus_0 = 0
-                else:
-                    fplus_0, fminus_0, _, _ = self.compute_fidelity(vt, s_0, ori_mask)
+                # t_star = (None, [0, 0, 0])
+                # if edge_size == 0:
+                #     fplus_0 = 0
+                #     fminus_0 = 0
+                # else:
+                #     fplus_0, fminus_0, _, _ = self.compute_fidelity(vt, s_0, ori_mask)
 
-                # source_edges = (edge_index[0] == cur_v)d
+                # target_edges = (edge_index[1] == cur_v)
+                # edge_positions = target_edges.nonzero(as_tuple=True)[0]
+
+                source_edges = (edge_index[0] == cur_v)
                 target_edges = (edge_index[1] == cur_v)
-                edge_positions = target_edges.nonzero(as_tuple=True)[0]
+                involving_edges = source_edges | target_edges
+                # involving_edges = target_edges
+                edge_positions = involving_edges.nonzero(as_tuple=True)[0]
 
-                print(f'cur_v:{cur_v}, edge_positions:{edge_positions}')
+                # print(f'cur_v:{cur_v}, edge_positions:{edge_positions}')
 
                 for edge_pos in edge_positions:
                     # print(f'position:{edge_pos}')
@@ -200,7 +155,7 @@ class ApxSXI:
                     if not (factual or counterfactual):
                         # print('invalid')
                         continue
-                    t = (edge_pos, [fplus-fplus_0, fminus-fminus_0, -1/subg_size])
+                    # t = (edge_pos, [fplus-fplus_0, fminus-fminus_0, -1/subg_size])
                     p_s = [fplus, fminus, 1-(math.log(edge_size)/math.log(subg_size))]
                     idx_s = []
                     for i in range(len(p_s)-1):
@@ -213,8 +168,8 @@ class ApxSXI:
                     # print(f'idx_s:{idx_s}')
         
                     DRG = self.update_sx(idx_s, DRG, s)
-                    if np.mean(t_star[1]) < np.mean(t[1]):
-                        t_star = t
+                    # if np.mean(t_star[1]) < np.mean(t[1]):
+                    #     t_star = t
                 
                 epoch = epoch - 1
 

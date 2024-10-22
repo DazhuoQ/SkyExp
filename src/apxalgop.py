@@ -21,7 +21,7 @@ class ApxSXOP:
         self.model = model  # gnn model
         self.k = k  # size of the skyline set
         self.VT = VT  # test nodes
-        self.L = L  # num of gnn layers
+        self.L = 2  # num of gnn layers
         self.epsilon = epsilon
         self.k_sky_lst = []
 
@@ -34,11 +34,11 @@ class ApxSXOP:
 
     def get_edge_sets_by_hop(self, vt):
 
-        L = self.L - 1
+        L = self.L
         edge_index = self.G.edge_index
 
         node_idx, edge_index_sub, _, original_edge_mask = k_hop_subgraph(vt, L, edge_index, relabel_nodes=False)
-        _, _, _, ori_mask = k_hop_subgraph(vt, L+1, edge_index, relabel_nodes=False)
+        ori_mask = original_edge_mask
         selected_edge_positions = torch.nonzero(original_edge_mask, as_tuple=False).squeeze()
         subg_size = selected_edge_positions.size(0)
         

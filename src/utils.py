@@ -3,7 +3,7 @@ import os
 import numpy as np
 import yaml
 import torch
-from torch_geometric.datasets import Planetoid, FacebookPagePage, AmazonProducts
+from torch_geometric.datasets import Planetoid, FacebookPagePage, AmazonProducts, Amazon
 from ogb.nodeproppred import PygNodePropPredDataset
 
 
@@ -36,7 +36,7 @@ def dataset_func(config, random_seed):
     set_seed(random_seed)
 
     if data_name == "FacebookPage":
-        dataset = FacebookPagePage(root="./datasets/facebookpp")
+        dataset = FacebookPagePage(root="./datasets/FacebookPagePage")
         data = dataset[0]
         num_nodes = data.x.size(0)
 
@@ -62,9 +62,10 @@ def dataset_func(config, random_seed):
         print(data)
         return data
 
-
-    if data_name == "AmazonProducts":
-        dataset = AmazonProducts(root="./datasets/amazon")
+    if data_name == "AmazonComputers":
+        
+        # Load the Amazon Computers dataset
+        dataset = Amazon(root='./datasets/', name='AmazonComputers')
         data = dataset[0]
         num_nodes = data.x.size(0)
 
@@ -92,7 +93,7 @@ def dataset_func(config, random_seed):
     
 
     if data_name == "arxiv":
-        dataset = PygNodePropPredDataset(name='ogbn-arxiv')
+        dataset = PygNodePropPredDataset(root='./datasets/', name='ogbn-arxiv')
         data = dataset[0]
         num_nodes = data.x.size(0)
         # print(f'data.y[:,0]:{data.y[:,0]}')

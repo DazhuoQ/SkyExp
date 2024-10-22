@@ -49,7 +49,7 @@ def compute_fidelity(data, node_idx, edge_mask, ori_mask, model):
 
 
 # Replace 'your_folder_path' with the actual path to your folder
-folder_path = './src/results/Cora/div/'
+folder_path = './src/results/arxiv/ksx/'
 k_sky_dict = defaultdict(list)
 
 # Loop through all files in the folder
@@ -70,16 +70,16 @@ for filename in os.listdir(folder_path):
 
         k_sky_lst = torch.load(file_path)
 
-    config = {
-        'data_name': 'Cora',
-        'data_size': 2708, 
-        'input_dim': 1433,
-        'hidden_dim': 16,
-        'output_dim': 7,
-        'num_test': 1,
-        'random_seed': 42,
-        'model_name': model_name,
-    }
+    # config = {
+    #     'data_name': 'Cora',
+    #     'data_size': 2708, 
+    #     'input_dim': 1433,
+    #     'hidden_dim': 16,
+    #     'output_dim': 7,
+    #     'num_test': 1,
+    #     'random_seed': 42,
+    #     'model_name': model_name,
+    # }
 
     # config = {
     #     'data_name': 'FacebookPage',
@@ -103,6 +103,28 @@ for filename in os.listdir(folder_path):
     #     'model_name': model_name,
     # }
 
+    # config = {
+    #     'data_name': 'AmazonComputers',
+    #     'data_size': 13752, 
+    #     'input_dim': 767,
+    #     'hidden_dim': 16,
+    #     'output_dim': 10,
+    #     'num_test': 1,
+    #     'random_seed': 42,
+    #     'model_name': model_name,
+    # }
+
+
+    config = {
+        'data_name': 'arxiv',
+        'data_size': 169343, 
+        'input_dim': 128,
+        'hidden_dim': 16,
+        'output_dim': 40,
+        'num_test': 1,
+        'random_seed': 42,
+        'model_name': model_name,
+    }
 
 
     data_name = config['data_name']
