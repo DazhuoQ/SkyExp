@@ -37,15 +37,9 @@ def main(config_file, output_dir):
 
     # Get input graph
     data = dataset_func(config, random_seed)
-    # print(f'is_undirected: {is_undirected(data.edge_index)}')
 
     # Get the VT
-    # VT = torch.where(data.test_mask)[0]
-    # VT = torch.tensor([1394, 2013])
     VT = torch.tensor(VT)
-    print(f'VT:{VT}')
-    _, _, _, original_edge_mask = k_hop_subgraph(VT[0].item(), 2, data.edge_index, relabel_nodes=False)
-    print(f'original_edge_mask:{original_edge_mask.sum().item()}')
 
     # Ready the model
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -73,10 +67,6 @@ def main(config_file, output_dir):
         print("Running Time: {:.2f} seconds".format(end_time - start_time))
         algorithm.IPF()
         print('IPF scores: {:.2f}'.format(algorithm.ipf))
-        # algorithm.IGD(algorithm.k_sky_lst)
-        # print('IGD scores: {:.2f}'.format(algorithm.igd))
-        # algorithm.MS(algorithm.k_sky_lst)
-        # print('MS scores: f+={:.2f}, f-={:.2f}, conc={:.2f}'.format(algorithm.ms_lst[0], algorithm.ms_lst[1], algorithm.ms_lst[2]))
 
         print('ok')
 
@@ -98,10 +88,6 @@ def main(config_file, output_dir):
         print("Running Time: {:.2f} seconds".format(end_time - start_time))
         algorithm.IPF()
         print('IPF scores: {:.2f}'.format(algorithm.ipf))
-        # algorithm.IGD(algorithm.k_sky_lst)
-        # print('IGD scores: {:.2f}'.format(algorithm.igd))
-        # algorithm.MS(algorithm.k_sky_lst)
-        # print('MS scores: f+={:.2f}, f-={:.2f}, conc={:.2f}'.format(algorithm.ms_lst[0], algorithm.ms_lst[1], algorithm.ms_lst[2]))
 
         print('ok')
 
@@ -126,10 +112,6 @@ def main(config_file, output_dir):
         print("Running Time: {:.2f} seconds".format(end_time - start_time))
         algorithm.IPF()
         print('IPF scores: {:.2f}'.format(algorithm.ipf))
-        # algorithm.IGD(algorithm.k_sky_lst)
-        # print('IGD scores: {:.2f}'.format(algorithm.igd))
-        # algorithm.MS(algorithm.k_sky_lst)
-        # print('MS scores: f+={:.2f}, f-={:.2f}, conc={:.2f}'.format(algorithm.ms_lst[0], algorithm.ms_lst[1], algorithm.ms_lst[2]))
 
         print('ok')
 

@@ -122,18 +122,6 @@ class DivSX:
         return fidelity_plus, fidelity_minus, factual, counterfactual
 
 
-    # def find_argmin_s(self, DRG):
-    #     min_key = None
-    #     min_size = float('inf')
-    #     for key, value in DRG.items():
-    #         edges = value[0].nonzero(as_tuple=True)[0]
-    #         current_size = torch.unique(self.G.edge_index[:, edges]).numel()
-    #         if current_size < min_size:
-    #             min_size = current_size
-    #             min_key = key
-    #     return min_key
-
-
     def update_node_features(self, mask, v):
 
         def cosine_kernel(x, y):
@@ -181,7 +169,6 @@ class DivSX:
                     new_features[i] = new_features[i]
                 else:
                     for neighbor in neighbors:
-                        # weight = rbf_kernel(x[i], x[neighbor], gamma)
                         weight = cosine_kernel(x[i], x[neighbor])
                         new_features[i] += weight * x[neighbor]
                     new_features[i] = new_features[i] / len(neighbors)
@@ -191,7 +178,6 @@ class DivSX:
             new_features = (new_features) / (new_features.norm(dim=1, keepdim=True) + 1e-6)
             x = new_features
         
-        # print(f'new_features[new_idx].unsqueeze(0):{new_features[new_idx].unsqueeze(0)}')
         return new_features[new_idx].unsqueeze(0), unique_nodes.tolist()
 
 
@@ -240,7 +226,6 @@ class DivSX:
             if len(DRG) < self.k:
                 DRG[idx_s] = [s]
             else:
-                # s_overline = self.find_argmin_s(DRG)
                 new_F, current_F, s_overline = self.compute_div(DRG, s, vt, subg_size)
                 if new_F > (1- (1/self.k))*current_F:
                     del DRG[s_overline]
@@ -254,13 +239,10 @@ class DivSX:
 
     def generate_k_skylines(self):
         edge_index = self.G.edge_index
-        # for vt in self.VT:
         for vt in tqdm(self.VT, desc='num VT'):
             DRG = defaultdict(list)
             k_sky = []
             vt = vt.item()
-            # print(f'vt: {vt}')
-            # plot_L_hop_subg(edge_index, vt, self.L)
             if not ((edge_index[0] == vt).any() or (edge_index[1] == vt).any()):
                 continue
             start_time = time.time()
@@ -272,13 +254,6 @@ class DivSX:
                 E_l = edges_by_hop[hop]
                 while len(E_l) != 0:
                     t_star = (None, [np.inf, np.inf, np.inf])
-                    # print('processing one prioritized edge ...')
-                    # print(f'E_l:{E_l}')
-
-                    # # cora
-                    # half_size = len(E_l) // 2
-                    # if half_size > 10:
-                    #     E_l = random.sample(E_l, half_size)
 
                     if len(E_l) > 10:
                         E_l = random.sample(E_l, 8)
@@ -292,7 +267,6 @@ class DivSX:
                         s[edge_pos] = False
                         fplus, fminus, factual, counterfactual = self.compute_fidelity(vt, s, ori_mask)
                         if not (factual or counterfactual):
-                            # print('invalid')
                             continue
                         t = (edge_pos, [fplus_0-fplus, fminus_0-fminus, -1/subg_size])
                         p_s = [1-fplus, 1-fminus, (math.log(edge_size)/math.log(subg_size))]
@@ -321,106 +295,14 @@ class DivSX:
             _, _, _, original_edge_mask = k_hop_subgraph(vt, self.L, self.G.edge_index, relabel_nodes=False)
             selected_edge_positions = torch.nonzero(original_edge_mask, as_tuple=False).squeeze()
             subg_size = selected_edge_positions.size(0)
-            # print(f'vt: {vt} subg_size:{subg_size}')
             score_lst = []
             for mask in k_sky:
                 fidelity_plus, fidelity_minus, _, _ = self.compute_fidelity(vt, mask, original_edge_mask)
                 conc = 1 - (math.log(mask.sum().item()) / math.log(subg_size))
-                # print(f'fidelity_plus:{fidelity_plus}, fidelity_minus:{fidelity_minus}, conc:{conc}')
                 tmp = (fidelity_plus + fidelity_minus + conc)/3
                 score_lst.append(tmp)
             score = np.mean(score_lst)
             self.ipf_lst.append((vt, score))
             self.ipf = np.mean([score for vt, score in self.ipf_lst])
-
-
-    def IGD(self, r_container):
-
-        def get_rank_lst(mask_list, num, ori_mask):
-            phi_set = []
-            for mask in mask_list:
-                fidelity_plus, fidelity_minus, _, _ = self.compute_fidelity(vt, mask, ori_mask)
-                conc = 1 - (math.log(mask.sum().item()) / math.log(subg_size))
-                phi_set.append((fidelity_plus, fidelity_minus, conc))
-
-            fplus_rank_lst = sorted(phi_set, key=lambda x: x[0], reverse=True)
-            fminus_rank_lst = sorted(phi_set, key=lambda x: x[1], reverse=True)
-            conc_rank_lst = sorted(phi_set, key=lambda x: x[2], reverse=True)
-
-            fplus_top_k = [item[0] for item in fplus_rank_lst][:num]
-            fminus_top_k = [item[1] for item in fminus_rank_lst][:num]
-            conc_top_k = [item[2] for item in conc_rank_lst][:num]
-
-            return fplus_top_k, fminus_top_k, conc_top_k
-
-        k_sky_dict = dict(self.k_sky_lst)
-
-        for vt, r_set in r_container:
-            _, _, _, original_edge_mask = k_hop_subgraph(vt, self.L, self.G.edge_index, relabel_nodes=False)
-            selected_edge_positions = torch.nonzero(original_edge_mask, as_tuple=False).squeeze()
-            subg_size = selected_edge_positions.size(0)
-
-            fplus_top_k, fminus_top_k, conc_top_k = get_rank_lst(r_set, self.k, original_edge_mask)
-            fplus_top_1, fminus_top_1, conc_top_1 = get_rank_lst(k_sky_dict[vt], 1, original_edge_mask)
-
-            fplus_igd = np.mean([(abs(fplus_top_1[0] - score)) for score in fplus_top_k])
-            fminus_igd = np.mean([(abs(fminus_top_1[0] - score)) for score in fminus_top_k])
-            conc_igd = np.mean([(abs(conc_top_1[0] - score)) for score in conc_top_k])
-
-            score = (fplus_igd + fminus_igd + conc_igd) / 3
-
-            self.igd_lst.append((vt, score))
-            self.igd = np.mean([score for vt, score in self.igd_lst])
-
-
-    def MS(self, r_container):
-        def get_best(mask_list, ori_mask):
-            phi_set = []
-            for mask in mask_list:
-                fidelity_plus, fidelity_minus, _, _ = self.compute_fidelity(vt, mask, ori_mask)
-                conc = 1 - (math.log(mask.sum().item()) / math.log(subg_size))
-                phi_set.append((fidelity_plus, fidelity_minus, conc))
-
-            fplus_rank_lst = sorted(phi_set, key=lambda x: x[0], reverse=True)
-            fminus_rank_lst = sorted(phi_set, key=lambda x: x[1], reverse=True)
-            conc_rank_lst = sorted(phi_set, key=lambda x: x[2], reverse=True)
-
-            fplus_top_k = [item[0] for item in fplus_rank_lst][0]
-            fminus_top_k = [item[1] for item in fminus_rank_lst][0]
-            conc_top_k = [item[2] for item in conc_rank_lst][0]
-
-            return fplus_top_k, fminus_top_k, conc_top_k
-
-        k_sky_dict = dict(self.k_sky_lst)
-
-        fplus_ms_lst = []
-        fminus_ms_lst = []
-        conc_ms_lst = []
-        for vt, r_set in r_container:
-            _, _, _, original_edge_mask = k_hop_subgraph(vt, self.L+1, self.G.edge_index, relabel_nodes=False)
-            selected_edge_positions = torch.nonzero(original_edge_mask, as_tuple=False).squeeze()
-            subg_size = selected_edge_positions.size(0)
-
-            global_fplus, global_fminus, global_conc = get_best(r_set, original_edge_mask)
-            our_fplus, our_fminus, our_conc = get_best(k_sky_dict[vt], original_edge_mask)
-
-            if global_fplus == 0:
-                global_fplus = 1
-            if global_fminus == 0:
-                global_fminus = 1
-            if global_conc == 0:
-                global_conc = 1
-
-            fplus_ms = our_fplus/global_fplus
-            fminus_ms = our_fminus/global_fminus
-            conc_ms = our_conc/global_conc
-
-            fplus_ms_lst.append(fplus_ms)
-            fminus_ms_lst.append(fminus_ms)
-            conc_ms_lst.append(conc_ms)
-
-        self.ms_lst = [np.mean(fplus_ms_lst), np.mean(fminus_ms_lst), np.mean(conc_ms_lst)]
-
-
 
 

@@ -1,4 +1,4 @@
-exp_name: insert # ksx, div, insert
+exp_name: ksx # ksx, div, insert
 random_seed: 42 # 715
 L: 3 # 1, 2, 3, 4
 k: 10
@@ -9,12 +9,12 @@ alpha: 0.5
 hidden_dim: 16
 model_name: "gcn" # gcn, gat, gin, gcn1, gcn2
 
-# data_name: "Cora"
-# data_size: 2708
-# num_test: 1
-# input_dim: 1433
-# output_dim: 7
-# VT: [61, 1879, 570, 2039, 2668, 2382, 1283, 736,1681,2082,49,1311,814,2281, 1097,242,1133,1394,2013,794,2430,1331,6,1581,2185,1815]
+data_name: "Cora"
+data_size: 2708
+num_test: 1
+input_dim: 1433
+output_dim: 7
+VT: [61, 1879, 570, 2039, 2668, 2382, 1283, 736,1681,2082,49,1311,814,2281, 1097,242,1133,1394,2013,794,2430,1331,6,1581,2185,1815]
 
 
 
@@ -72,13 +72,13 @@ model_name: "gcn" # gcn, gat, gin, gcn1, gcn2
 #         17392,  8171,  9154,  6416, 16592,  5914,  1190]
 
 
-data_name: "AmazonComputers"
-data_size: 13752
-num_test: 1
-input_dim: 767
-output_dim: 10
-# VT: [34]
-VT: [5, 6, 8, 9, 14, 19, 20, 27, 30, 33]
+# data_name: "AmazonComputers"
+# data_size: 13752
+# num_test: 1
+# input_dim: 767
+# output_dim: 10
+# # VT: [34]
+# VT: [5, 6, 8, 9, 14, 19, 20, 27, 30, 33]
 
 
 

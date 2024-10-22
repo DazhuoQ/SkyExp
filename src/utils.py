@@ -96,9 +96,6 @@ def dataset_func(config, random_seed):
         dataset = PygNodePropPredDataset(root='./datasets/', name='ogbn-arxiv')
         data = dataset[0]
         num_nodes = data.x.size(0)
-        # print(f'data.y[:,0]:{data.y[:,0]}')
-        # print(f'torch.max(data.y[:,0]):{torch.max(data.y[:,0])}')
-        # print(f'torch.min(data.y[:,0]):{torch.min(data.y[:,0])}')
         data.y = data.y[:,0]
 
         # Create new masks
