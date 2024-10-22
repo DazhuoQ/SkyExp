@@ -6,7 +6,7 @@ GitHub Repo for SkyExp.
 pip install -r requirements.txt
 ```
 
-## 2. Train the model. (Some models are provided.)
+## 2. Train your own model. 
 ```
 ./train.sh config.yaml train_results/
 ```
