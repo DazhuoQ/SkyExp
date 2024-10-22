@@ -16,4 +16,4 @@ pip install -r requirements.txt
 ./run.sh config.yaml results/
 ```
 
-## 4. The edge masks of explanations are stored in src.results, together with baseline results, the IGD and MS scores can be calculated. 
+The edge masks of explanations are stored in src.results, together with baseline results, the IGD and MS scores can be calculated. 
