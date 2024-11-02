@@ -1,5 +1,5 @@
 # SkyExp
-GitHub Repo for SkyExp.
+GitHub Repo for SkyExp. All experimental settings are in config.yaml. 
 
 ## 1. Install packages using requirements.txt
 ```
